@@ -1,4 +1,4 @@
-package gabrielleopoldino.contextnet.mobilehub;
+package gabrielleopoldino.contextnet.mobilehubsimulator;
 
 import static org.junit.Assert.assertTrue;
 
