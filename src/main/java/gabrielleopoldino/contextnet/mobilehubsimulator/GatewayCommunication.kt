@@ -4,6 +4,7 @@ import lac.cnclib.net.NodeConnection
 import lac.cnclib.net.NodeConnectionListener
 import lac.cnclib.net.mrudp.MrUdpNodeConnection
 import lac.cnclib.sddl.message.ApplicationMessage
+import lac.cnclib.sddl.message.ClientLibProtocol
 import lac.cnclib.sddl.message.Message
 import java.io.StringReader
 import java.lang.Exception
@@ -24,10 +25,11 @@ class GatewayCommunication constructor(val gatewayAddress: SocketAddress) : Comm
 
     override fun sendDataToGateway(message: JsonObject) {
         val sddlMessage = ApplicationMessage()
+        sddlMessage.setPayloadType(ClientLibProtocol.PayloadSerialization.JSON)
         sddlMessage.contentObject = message.toString()
         connection.sendMessage(sddlMessage)
 
-        LOGGER.finer("Send: $message")
+        LOGGER.info("Send: $message")
     }
 
 
@@ -53,10 +55,10 @@ class GatewayCommunication constructor(val gatewayAddress: SocketAddress) : Comm
                     MessageManager.processDataToMobj(json)
                 }
                 else
-                    error("Content is not a String")
+                    LOGGER.severe("Content is not a String")
             }
             else
-                error("Content is null")
+                LOGGER.severe("Content is null")
         }
 
         override fun unsentMessages(remoteCon: NodeConnection?, unsentMessages: MutableList<Message>?) {
