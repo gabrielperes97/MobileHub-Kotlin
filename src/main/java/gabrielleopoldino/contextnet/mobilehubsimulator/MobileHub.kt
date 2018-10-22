@@ -8,8 +8,10 @@ import gabrielleopoldino.contextnet.mobilehubsimulator.tecnologies.simulator.Sim
 import leopoldino.smrudp.SecurityProfile
 import java.io.File
 import java.net.InetSocketAddress
-import java.security.cert.X509Certificate
-import java.util.*
+import java.security.SecureRandom
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManagerFactory
 
 
 object MobileHub {
@@ -28,6 +30,10 @@ object MobileHub {
 
         @Parameter(names = ["-tp", "--trust-password"], description = "the password for the trust keystore")
         var  trustPassword : String = ""
+
+        @Parameter(names = ["-r", "--reserved"], description = "Use reserved mode (Scenario 1)")
+        var reservedMode : Boolean = false
+
     }
 
     private class FileConverter : IStringConverter<File> {
@@ -54,12 +60,25 @@ object MobileHub {
 
             println("Starting MobileHub in secure mode")
             MessageManager.start(SecureGatewayCommunication(InetSocketAddress("127.0.0.1", 5500), trust, commandSecure.trustPassword, identity, commandSecure.identityPassword))
-            SimulatorConnection.start(12346)
+            if (commandSecure.reservedMode) {
+                val context = SSLContext.getInstance("TLSv1.2")
+                val keyFact = KeyManagerFactory.getInstance("SunX509")
+                keyFact.init(identity, commandSecure.identityPassword.toCharArray())
+                val trustFact = TrustManagerFactory.getInstance("SunX509")
+                //Yes, verify with the identity
+                trustFact.init(identity)
+
+                context.init(keyFact.keyManagers, trustFact.trustManagers, SecureRandom())
+                SimulatorConnection.init(12346, context)
+                println("Simulator connection in reserved mode")
+            }
+            else
+                SimulatorConnection.init(12346)
         }
         else {
             println("Starting MobileHub in unsecure mode")
             MessageManager.start(GatewayCommunication(InetSocketAddress("127.0.0.1", 5500)))
-            SimulatorConnection.start(12346)
+            SimulatorConnection.init(12346)
         }
     }
 }

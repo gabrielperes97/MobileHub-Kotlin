@@ -52,7 +52,7 @@ class SecureGatewayCommunication constructor(val gatewayAddress: SocketAddress, 
 
         signer.initSign(privateKey)
 
-        connection = SmrUdpNodeConnection(uuid, SecurityProfile.getInstance(trustKeyStore, trustPassword, identity, identityPassword))
+        connection = SmrUdpNodeConnection(uuid, SecurityProfile.getInstance(trustKeyStore, identity, identityPassword))
         connection.addNodeConnectionListener(Listener())
         connection.connect(gatewayAddress)
     }
@@ -89,7 +89,8 @@ class SecureGatewayCommunication constructor(val gatewayAddress: SocketAddress, 
                 if (content is String) {
                     val str = message.contentObject as String
                     val json = Json.createReader(StringReader(str)).readObject()
-                    MessageManager.processDataToMobj(json)
+                    val signedJson = signJson(json)
+                    MessageManager.processDataToMobj(signedJson)
                 }
                 else
                     LOGGER.severe("Content is not a String")

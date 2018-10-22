@@ -18,24 +18,53 @@ import java.util.logging.Logger
 import javax.json.Json
 import javax.json.JsonObject
 import javax.json.JsonString
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLServerSocket
 import kotlin.collections.HashMap
 
 object SimulatorConnection : Tecnology{
     override val mapObjs = HashMap<UUID, MOBJ>()
 
     val scanInterval = 1000 //ms
-    val socketServer = ServerSocket()
+    lateinit var socketServer : ServerSocket
     internal val objs = ArrayList<MOBJ>()//TODO Jogar isso em um escopo geral se for aumentar o numero de tecnologias
     var port: Int = 0
 
     val LOGGER = Logger.getLogger("SimulatorConnection")
 
+    var initialized = false
+    var reserved = false
 
-    fun start(port: Int) {
-        this.port = port
-        socketServer.bind(InetSocketAddress(port))
-        println("Starting simulation server at "+Inet4Address.getLocalHost()+":"+ socketServer.localPort)
-        Accepter.start()
+
+    fun init(port: Int) {
+        if (!initialized) {
+            reserved = false
+            this.port = port
+            socketServer = ServerSocket(port)
+            println("Starting simulation server at " + Inet4Address.getLocalHost() + ":" + socketServer.localPort)
+            Accepter.start()
+        }
+        else
+        {
+            error("Simulator Connection already initialized")
+        }
+    }
+
+    fun init(port: Int, sslContext: SSLContext) {
+        if (!initialized) {
+            reserved = true
+            this.port = port
+            val sslServer = sslContext.serverSocketFactory.createServerSocket() as SSLServerSocket
+            sslServer.needClientAuth = true
+            socketServer = sslServer
+            socketServer.bind(InetSocketAddress(port))
+            println("Starting simulation server in reserver mode at " + Inet4Address.getLocalHost() + ":" + socketServer.localPort)
+            Accepter.start()
+        }
+        else
+        {
+            error("Simulator Connection already initialized")
+        }
     }
 
     private fun sendImpl(mobj: MOBJ, message: JsonObject){
